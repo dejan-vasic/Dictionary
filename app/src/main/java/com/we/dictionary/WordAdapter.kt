@@ -7,17 +7,19 @@ import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 
 class WordAdapter(private val data: ArrayList<Word>): RecyclerView.Adapter<WordAdapter.ViewHolder>() {
 
     private lateinit var mainActivity: MainActivity
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val textView = itemView.findViewById<TextView>(R.id.textView)
-        val checkBox = itemView.findViewById<CheckBox>(R.id.checkBox)
-        val editText = itemView.findViewById<TextView>(R.id.edit_text)
-        val pen = itemView.findViewById<ImageView>(R.id.pen)
-        val bin = itemView.findViewById<ImageView>(R.id.bin)
+        val textView: TextView = itemView.findViewById(R.id.textView)
+        val checkBox: CheckBox = itemView.findViewById(R.id.checkBox)
+        val editText: TextView = itemView.findViewById(R.id.edit_text)
+        val pen: ImageView = itemView.findViewById(R.id.pen)
+        val bin: ImageView = itemView.findViewById(R.id.bin)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -28,7 +30,7 @@ class WordAdapter(private val data: ArrayList<Word>): RecyclerView.Adapter<WordA
         val wordData = data[position]
         val word = wordData.text
         holder.textView.text = word
-        holder.checkBox.isChecked = wordData.isWritten
+        holder.checkBox.isChecked = wordData.isWritten == true
         holder.checkBox.setOnClickListener {
             wordData.isWritten = holder.checkBox.isChecked
             if (holder.checkBox.isChecked) {
@@ -57,8 +59,11 @@ class WordAdapter(private val data: ArrayList<Word>): RecyclerView.Adapter<WordA
                 }
             }
             holder.bin.setOnClickListener {
-                data.remove(wordData)
+                mainActivity.removeFromDatabase(position)
+                data.removeAt(position)
                 this.notifyItemRemoved(position)
+                this.notifyItemRangeChanged(position, data.size)
+                mainActivity.addToDatabase(data)
             }
         }
 //        val imageView2 = mainActivity.findViewById<ImageView>(R.id.imageView3)

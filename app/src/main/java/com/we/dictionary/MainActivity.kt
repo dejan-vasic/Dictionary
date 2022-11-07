@@ -4,7 +4,6 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.view.KeyEvent
 import android.view.View
 import android.view.View.OnKeyListener
 import android.widget.ImageView
@@ -16,6 +15,11 @@ import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 import java.io.File
 import java.security.Key
 import java.util.*
@@ -27,9 +31,11 @@ class MainActivity : AppCompatActivity() {
     private val data = ArrayList<Word>()
     private lateinit var noSearchResultsFoundText: TextView
     private lateinit var recyclerView: RecyclerView
+    private val database = Firebase.database
+    private val ref = database.getReference("words")
 
     var clickCount = 0
-    var clickCount2 = 0
+    private var clickCount2 = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +55,27 @@ class MainActivity : AppCompatActivity() {
 
 
         recyclerView.layoutManager = LinearLayoutManager(this)
+
+        ref.addListenerForSingleValueEvent(object: ValueEventListener {
+
+            override fun onDataChange(snapshot: DataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                val children = snapshot.children
+                children.forEach {
+                    data.add(Word(
+                        it.child("text").value.toString(),
+                        it.child("isWritten").value as? Boolean
+                    ))
+                }
+                attachAdapter(data)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.w("MainActivity", "Failed to read value.", error.toException())
+            }
+
+        })
 
         if (text != null) {
             data.add((Word(text.toString())))
@@ -70,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         imageView.setOnClickListener {
             val filteredList = ArrayList<Word>()
             for (currentData in data) {
-                if (!currentData.isWritten) {
+                if (!currentData.isWritten!!) {
                     filteredList.add(currentData)
                 }
             }
@@ -91,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                 for (i in data.indices) {
                     data[i].isEditable = false
                     adapter.notifyItemChanged(i)
+                    attachAdapter(data)
 //                    searchEditText.setText(text)
 //                    searchEditText.addTextChangedListener(watcher)
                 }
@@ -99,6 +127,7 @@ class MainActivity : AppCompatActivity() {
                 for (i in data.indices) {
                     data[i].isEditable = true
                     adapter.notifyItemChanged(i)
+                    attachAdapter(data)
                 }
 //                searchEditText.removeTextChangedListener(watcher)
 //                text = searchEditText.text.toString()
@@ -121,6 +150,20 @@ class MainActivity : AppCompatActivity() {
 //        super.onStop()
 //        data.clear()
 //    }
+
+    override fun onStop() {
+        super.onStop()
+
+        addToDatabase(data)
+    }
+
+    fun addToDatabase(data: ArrayList<Word>) {
+        ref.setValue(data)
+    }
+
+    fun removeFromDatabase(position: Int) {
+        ref.child(position.toString()).removeValue()
+    }
 
     private fun attachAdapter(data: ArrayList<Word>) {
         adapter = WordAdapter(data)
