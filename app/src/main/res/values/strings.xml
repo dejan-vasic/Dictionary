@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dictionary</string>
+    <string name="textview">TextView</string>
+    <string name="todo">TODO</string>
+    <string name="type_new_word">type new word...</string>
+    <string name="no_no">no no!</string>
+</resources>
